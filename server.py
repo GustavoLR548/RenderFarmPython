@@ -1,20 +1,24 @@
-from socket import socket, AF_INET, SOCK_STREAM, gethostname
+from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from threading import Thread
-from typing import List
+from typing import Dict
 
 from client_thread import ClientThread
 
 HOST = "127.0.0.1"
 PORT = 5000
 
+USERNAME_KEY = "username"
+ADDRESS_KEY  = "address"
+
 class Server(Thread):
 
-    _clients: List = []
+    _clients: Dict = {}
 
     def __init__(self) -> None:
         Thread.__init__(self)
         self.running = True
         self.socket = socket(AF_INET, SOCK_STREAM)
+        self.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
 
     def run(self) -> None:
@@ -27,33 +31,37 @@ class Server(Thread):
             print("Waiting for a connection...")
             conn, addr = self.socket.accept()
 
-            print("New connection detected: ", addr)
-            self._clients.append(conn)
-            new_client = ClientThread(conn,self)
-            new_client.start()
+            username = conn.recv(1024)
+            print("New connection detected!\nAddress: ", addr, "Username: ", username)
+            self.__add_new_connection(conn,addr,username)
 
     def process_message(self, msg, conn) -> None:
         
-        if "!" in msg:
+        self.__broadcast_message(msg,conn)
 
-            if "quit" in msg:
-                self.__broadcast_message("Client disconnected!",conn)
-        else: 
-            self.__broadcast_message(msg,conn)
+    def __add_new_connection(self,conn,addr,username) -> None:
+        self._clients[conn] = {
+            USERNAME_KEY : username,
+            ADDRESS_KEY  : addr
+        }
+        new_client = ClientThread(conn,self)
+        new_client.start()
+
 
     def __broadcast_message(self, msg, conn) -> None:
 
         print("broadcasting message...")
-        for client in self._clients:
+        client : socket
+        for client in self._clients.keys():
 
             if client != conn: 
 
                 try: 
-                    client.sendall(bytes(msg,"utf-8"))
+                    client.sendall(msg)
 
                 except: 
                     client.close()
-                    self._clients.remove(client)
+                    self._clients.pop(client)
 
 if __name__ == "__main__":
 
