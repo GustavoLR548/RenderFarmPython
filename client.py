@@ -1,11 +1,12 @@
 from threading import Thread
 
 from socket import socket, AF_INET, SOCK_STREAM
-from image_utils import open_image_as_byte_array, read_image_from_bytes
+from image_utils import open_image_as_byte_array, read_image_from_bytes, apply_blur
 
 import constants as consts
 
-from conversion_utils import to_bytes
+from conversion_utils import to_bytes, string_from_bytes
+from network_utils import capture_image
 
 class Client(Thread):
 
@@ -27,8 +28,19 @@ class Client(Thread):
 
         while self.running:
             
-            data = self.socket.recv(consts.MSG_BUFFER_SIZE)
+            data        = None
+            instruction = string_from_bytes(self.conn.recv(consts.MSG_BUFFER_SIZE))
+            
+            if consts.SENDING_IMAGE in instruction:
+                num_of_bytes = int(instruction.split("|")[1])
+                data = capture_image(self.conn,data,num_of_bytes)
 
+            image = read_image_from_bytes(data)
+            image = apply_blur(image,5)
+
+            img_bytes = open_image_as_byte_array(image)
+
+            self.socket.sendall(img_bytes)
 
     def send_image(self, text: str) -> None:
         

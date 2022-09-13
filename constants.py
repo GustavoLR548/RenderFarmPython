@@ -4,6 +4,7 @@ MSG_BUFFER_SIZE  = 1024
 
 # Socket communication constants
 SENDING_IMAGE = "SENDING_IMAGE"
+RECEIVING_IMAGE = "RECEIVING_IMAGE"
 
 # Reserved words for messaging
 RESERVED_MESSAGES = [
