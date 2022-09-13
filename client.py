@@ -1,33 +1,45 @@
-from socket import socket, AF_INET, SOCK_STREAM, gethostname
 from threading import Thread
+
+from socket import socket, AF_INET, SOCK_STREAM
 from image_utils import open_image_as_byte_array, read_image_from_bytes
 
-HOST = "127.0.0.1"
-PORT = 5000
+import constants as consts
+
+from conversion_utils import to_bytes
 
 class Client(Thread):
 
-    def __init__(self,name) -> None:
+
+    def __init__(self,name, address = consts.LOCAL_CONNECTION) -> None:
+        
         Thread.__init__(self)
         self.running  = True
         self.username = name
-        self.socket   = socket(AF_INET, SOCK_STREAM)
+        self.address = address
+        self.socket = socket(AF_INET, SOCK_STREAM)
+
 
     def run(self) -> None: 
 
-        self.socket.connect((HOST, PORT))
-        self.socket.sendall(bytes(self.username,"utf-8"))
+        self.socket.connect(self.address)
+        self.socket.sendall(to_bytes(self.username))
         print("Connected to server!")
 
         while self.running:
-            data = self.socket.recv(1024)
+            
+            data = self.socket.recv(consts.MSG_BUFFER_SIZE)
 
-            image = read_image_from_bytes(data)
-            if not data:
-                self.running = False 
 
-            else:
-                print(image)
+    def send_image(self, text: str) -> None:
+        
+        image = open_image_as_byte_array(text)
+        image_size = len(image)
+
+        msg = f"{consts.SENDING_IMAGE}|{image_size}"
+
+        self.socket.sendall(to_bytes(msg))
+        self.socket.sendall(image)
+
 
 def main() -> None:
 
@@ -41,20 +53,19 @@ def main() -> None:
     while running:
         text = input()
 
-        if text == "!quit":
-            client.socket.sendall(bytes(f"!quit","utf-8"))
-            client.running = False
-            running = False 
+        if text in consts.RESERVED_MESSAGES: 
+            client.socket.sendall(to_bytes(text))
+
+            if text == consts.QUIT_PROGRAM:
+                client.running = False
+                running = False 
 
         else:
-            image = open_image_as_byte_array(text)
-            print(len(image))
-
-            client.socket.sendall(bytes(f"SENDING_IMAGE|{len(image)}","utf-8"))
-            client.socket.sendall(image)
+            client.send_image(text)
 
     client.join()
 
 if __name__ == "__main__":
+
     main()
     

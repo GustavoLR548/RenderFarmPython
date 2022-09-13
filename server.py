@@ -3,9 +3,9 @@ from threading import Thread
 from typing import Dict
 
 from client_thread import ClientThread
+from constants import MSG_BUFFER_SIZE, LOCAL_CONNECTION
 
-HOST = "127.0.0.1"
-PORT = 5000
+from conversion_utils import string_from_bytes
 
 USERNAME_KEY = "username"
 ADDRESS_KEY  = "address"
@@ -14,16 +14,20 @@ class Server(Thread):
 
     _clients: Dict = {}
 
-    def __init__(self) -> None:
+    def __init__(self,address=LOCAL_CONNECTION) -> None:
+
         Thread.__init__(self)
+        
         self.running = True
+        self.address = address
         self.socket = socket(AF_INET, SOCK_STREAM)
+        
         self.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
 
     def run(self) -> None:
 
-        self.socket.bind((HOST,PORT))
+        self.socket.bind(self.address)
         self.socket.listen()
 
         while self.running:
@@ -31,19 +35,24 @@ class Server(Thread):
             print("Waiting for a connection...")
             conn, addr = self.socket.accept()
 
-            username = conn.recv(1024)
-            print("New connection detected!\nAddress: ", addr, "Username: ", username)
+            username = string_from_bytes(conn.recv(MSG_BUFFER_SIZE))
+            print(f"New connection detected!\nAddress: {addr} \nUsername: {username}")
+
             self.__add_new_connection(conn,addr,username)
+
 
     def process_message(self, msg, conn) -> None:
         
         self.__broadcast_message(msg,conn)
 
+
     def __add_new_connection(self,conn,addr,username) -> None:
+        
         self._clients[conn] = {
             USERNAME_KEY : username,
             ADDRESS_KEY  : addr
         }
+
         new_client = ClientThread(conn,self)
         new_client.start()
 
@@ -63,8 +72,19 @@ class Server(Thread):
                     client.close()
                     self._clients.pop(client)
 
-if __name__ == "__main__":
+def main() -> None:
 
     server = Server()
     server.start()
+
+    running = True
+
+    while running:
+        text = input()
+
+
+if __name__ == "__main__":
+
+    main()
+
 
