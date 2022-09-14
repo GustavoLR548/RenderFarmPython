@@ -5,8 +5,8 @@ from image_utils import open_image_as_byte_array, read_image_from_bytes, apply_b
 
 import constants as consts
 
-from conversion_utils import to_bytes, string_from_bytes
-from network_utils import capture_image
+from byte_utils import to_bytes
+import network_utils as NetworkUtils
 
 class Client(Thread):
 
@@ -28,19 +28,32 @@ class Client(Thread):
 
         while self.running:
             
-            data        = None
-            instruction = string_from_bytes(self.conn.recv(consts.MSG_BUFFER_SIZE))
-            
-            if consts.SENDING_IMAGE in instruction:
-                num_of_bytes = int(instruction.split("|")[1])
-                data = capture_image(self.conn,data,num_of_bytes)
+            data = self.socket.recv(consts.MSG_BUFFER_SIZE)
+            print(f"Data was received! {data}")
 
-            image = read_image_from_bytes(data)
-            image = apply_blur(image,5)
+            instructions, data = NetworkUtils.separate_instructions_from_bytes(data)
+            print(f"Image data retrieved! {data}")
 
-            img_bytes = open_image_as_byte_array(image)
+            if consts.SENDING_IMAGE in instructions:
+                
+                print("Getting instruction data")
+                num_of_bytes, image_id = NetworkUtils.get_instruction_data(instructions)
+                print(f"Num of bytes = {num_of_bytes} \t image_id = {image_id}")
 
-            self.socket.sendall(img_bytes)
+                data = NetworkUtils.capture_image(self.socket,data,num_of_bytes)
+
+                print("reading and applying blur to image")
+                image = read_image_from_bytes(data)
+                image = apply_blur(image,5)
+                print("processing complete! now sending the images back to the server")
+                img_bytes  = open_image_as_byte_array(image)
+                image_size = len(img_bytes) 
+
+                msg = f"{consts.SENDING_IMAGE}|{image_id}|{image_size}"
+                msg = NetworkUtils.to_image_instruction_msg(msg)
+
+                print("Sending images back!")
+                self.socket.sendall(msg + img_bytes)
 
     def send_image(self, text: str) -> None:
         

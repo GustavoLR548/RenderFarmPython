@@ -1,12 +1,13 @@
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
-from threading import Thread
+from threading import Thread, enumerate
 from typing import Dict
 
 from client_thread import ClientThread
 from constants import MSG_BUFFER_SIZE, LOCAL_CONNECTION, SENDING_IMAGE
 
-from conversion_utils import string_from_bytes, to_bytes
+from byte_utils import string_from_bytes
 import image_utils as ImageUtils
+from network_utils import to_image_instruction_msg
 
 USERNAME_KEY = "username"
 ADDRESS_KEY  = "address"
@@ -16,12 +17,11 @@ class Server(Thread):
 
     _clients: Dict = {}
     _num_clients: int = 0
-    _final_slabs = None
 
     def __init__(self,address=LOCAL_CONNECTION) -> None:
 
         Thread.__init__(self)
-        
+
         self.running = True
         self.address = address
         self.socket = socket(AF_INET, SOCK_STREAM)
@@ -44,11 +44,11 @@ class Server(Thread):
 
             self.__add_new_connection(conn,addr,username)
 
-
+    """
     def process_client_message(self, msg, conn) -> None:
         
         self.__broadcast_message(msg,conn)
-
+    """
 
     def __add_new_connection(self,conn,addr,username) -> None:
         
@@ -61,38 +61,16 @@ class Server(Thread):
         new_client = ClientThread(conn,self)
         new_client.start()
 
-
-    def __broadcast_message(self, msg, conn) -> None:
-
-        print("broadcasting message...")
-        client: socket
-        for client in self._clients.keys():
-
-            if client != conn: 
-
-                try: 
-                    client.sendall(msg)
-
-                except: 
-                    client.close()
-                    self._clients.pop(client)
-
-
-    def receive_image_from_clients(self,img) -> None:
-        pass #TODO: logic to get the images from clients and send to final step
-
-    
-    def process_final_image(self) -> None:
-        reconstructed_img = ImageUtils.merge_img_slabs(self._final_slabs, 
-                                                        self._num_clients, 
-                                                        BLUR_RADIUS)
-
-        reconstructed_img.save("conseguimos_rada.jpg")
-
     def send_image_to_clients_process(self,img_path: str) -> None:
+
+        print("splitting the image in slabs")
 
         img = ImageUtils.open_image_as_numpy_array(img_path)
         img_slabs = ImageUtils.split_img(img, self._num_clients, BLUR_RADIUS)
+
+        print("starting the sending process")
+        ClientThread.start_client_processing(len(img_slabs))
+        print("Success! Now sending to the clients")
 
         client: socket 
         i = 0
@@ -101,16 +79,18 @@ class Server(Thread):
             img_bytes = ImageUtils.open_image_as_byte_array(img_slabs[i])
             image_size = len(img_bytes)
 
-            msg = f"{SENDING_IMAGE}|{image_size}"
+            msg = f"{SENDING_IMAGE}|{i}|{image_size}"
+            msg = to_image_instruction_msg(msg)
 
             try:
-                client.sendall(to_bytes(msg))
-                client.sendall(img_bytes)
+                client.sendall(msg + img_bytes)
+            
             except: 
                 client.close()
                 self._clients.pop(client)
 
             i += 1
+        print("Success! The slabs were sent")
 
 def main() -> None:
 
@@ -122,11 +102,12 @@ def main() -> None:
     while running:
         text = input()
 
-        server.send_image_to_clients_process(text)
+        if text == "!enumerate":
+            print(enumerate())
+        else:
+            server.send_image_to_clients_process(text)
 
 
 if __name__ == "__main__":
 
     main()
-
-

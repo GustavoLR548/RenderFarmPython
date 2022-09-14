@@ -1,17 +1,14 @@
-from typing import overload
 from PIL import Image, ImageFilter
 from io import BytesIO
 
 import numpy as np
-
-@overload(str)
-def open_image_as_byte_array(img_path: str) -> bytes:
+"""
+def open_image_path_as_byte_array(img_path: str) -> bytes:
   
   img = Image.open(img_path)
   return open_image_as_byte_array(img)
+"""
 
-
-@overload(Image)
 def open_image_as_byte_array(img: Image) -> bytes:
   imgByteArr = BytesIO()
   img.save(imgByteArr, "PNG")
