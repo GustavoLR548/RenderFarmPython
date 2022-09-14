@@ -63,6 +63,7 @@ def remove_bottom_pixels(slab, blur_radius: int):
 
     return slab
 
+
 def apply_blur(image: Image, blur_radius: float):
     return image.filter(ImageFilter.BoxBlur(blur_radius))
 

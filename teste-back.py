@@ -88,7 +88,6 @@ BLUR_RADIUS = 5
 
 slabs = split_img(original_image, N_SLABS, BLUR_RADIUS)
 
-print(type(slabs[0]))
 ## CLIENT
 # Blurring the image
 

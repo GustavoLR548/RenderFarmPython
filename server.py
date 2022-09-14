@@ -65,7 +65,7 @@ class Server(Thread):
     def __broadcast_message(self, msg, conn) -> None:
 
         print("broadcasting message...")
-        client : socket
+        client: socket
         for client in self._clients.keys():
 
             if client != conn: 
