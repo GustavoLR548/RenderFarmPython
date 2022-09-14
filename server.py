@@ -5,7 +5,7 @@ from typing import Dict
 from client_thread import ClientThread
 from constants import MSG_BUFFER_SIZE, LOCAL_CONNECTION
 
-from conversion_utils import string_from_bytes
+from byte_utils import string_from_bytes
 
 USERNAME_KEY = "username"
 ADDRESS_KEY  = "address"

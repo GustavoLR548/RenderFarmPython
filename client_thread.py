@@ -1,10 +1,8 @@
 from threading import Thread
 from image_utils import read_image_from_bytes
-from network_utils import capture_image
+from network_utils import capture_image, extract_instruction_from_bytes
 
 from constants import MSG_BUFFER_SIZE, SENDING_IMAGE
-
-from conversion_utils import string_from_bytes
 
 class ClientThread(Thread):
 
@@ -21,13 +19,16 @@ class ClientThread(Thread):
         
         while self.running:
 
-            data        = None
-            instruction = string_from_bytes(self.conn.recv(MSG_BUFFER_SIZE))
-            
+            data = self.conn.recv(MSG_BUFFER_SIZE)
+
+            instruction, data = extract_instruction_from_bytes(data)
+
             if SENDING_IMAGE in instruction:
                 num_of_bytes = int(instruction.split("|")[1])
                 data = capture_image(self.conn,data,num_of_bytes)
 
             image = read_image_from_bytes(data)
             image.save("conseguimos.jpg")
+            
+            
 
