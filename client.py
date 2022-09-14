@@ -1,12 +1,12 @@
 from threading import Thread
-
 from socket import socket, AF_INET, SOCK_STREAM
-from image_utils import open_image_as_byte_array
 
 import constants as consts
 
+from image_utils import open_image_as_byte_array
 from byte_utils import to_bytes
 from network_utils import to_image_instruction_msg
+
 
 class Client(Thread):
 
@@ -37,8 +37,9 @@ class Client(Thread):
         image_size = len(image)
 
         msg = f"{consts.SENDING_IMAGE}|{image_size}"
+        msg = to_image_instruction_msg(msg)
 
-        self.socket.sendall(to_image_instruction_msg(msg) + image)
+        self.socket.sendall(msg + image)
 
 
 def main() -> None:

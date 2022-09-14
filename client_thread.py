@@ -20,8 +20,11 @@ class ClientThread(Thread):
         while self.running:
 
             data = self.conn.recv(MSG_BUFFER_SIZE)
-
             instruction, data = extract_instruction_from_bytes(data)
+
+            if not instruction:
+                print("Error! Invalid instruction")
+                continue
 
             if SENDING_IMAGE in instruction:
                 num_of_bytes = int(instruction.split("|")[1])

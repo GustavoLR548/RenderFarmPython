@@ -1,9 +1,9 @@
 from ctypes import Array
 from constants import FILE_BUFFER_SIZE, BYTE_MSG_DELIMITER, IMAGE_START
-from byte_utils import to_bytes
+from byte_utils import string_from_bytes, to_bytes
 
 def capture_image(socket,data,num_of_bytes):
-
+    
     if not data:
         data = b''
 
@@ -21,17 +21,27 @@ def capture_image(socket,data,num_of_bytes):
 
 
 def to_image_instruction_msg(text: str) -> bytes:
+  
     return to_bytes(text + BYTE_MSG_DELIMITER)
 
 
-def extract_instruction_from_bytes(bt: bytes) -> Array:
-    instruction: str = ""
-    i = 0
-    for i in range(len(bt)):
-        char = chr(bt[i])
 
-        if char == BYTE_MSG_DELIMITER or char == IMAGE_START:
-            break
-        instruction += char
+def extract_instruction_from_bytes(bt: bytes) -> Array:
+ 
+    i = 0
+    while not __end_of_msg(chr(bt[i])):
+        i += 1
+
+    instruction = ""
+    if i != 0:
+        instruction = string_from_bytes(bt[:i])
+    
+    else:
+        i = -1
 
     return [instruction, bt[i+1:]]
+
+
+def __end_of_msg(char: str) -> bool:
+  
+    return char == BYTE_MSG_DELIMITER or char == IMAGE_START
