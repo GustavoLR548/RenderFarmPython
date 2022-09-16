@@ -26,7 +26,7 @@ def to_image_instruction_msg(text: str) -> bytes:
 
 
 
-def extract_instruction_from_bytes(bt: bytes) -> Array:
+def separate_instructions_from_bytes(bt: bytes) -> Array:
  
     i = 0
     while not __end_of_msg(chr(bt[i])):
@@ -45,3 +45,12 @@ def extract_instruction_from_bytes(bt: bytes) -> Array:
 def __end_of_msg(char: str) -> bool:
   
     return char == BYTE_MSG_DELIMITER or char == IMAGE_START
+
+
+def get_instruction_data(instructions: str) -> Array:
+    instruction_data = instructions.split("|")
+                
+    num_of_bytes = int(instruction_data[2])
+    image_id     = int(instruction_data[1])
+
+    return [num_of_bytes, image_id]
