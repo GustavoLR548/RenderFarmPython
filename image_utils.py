@@ -2,13 +2,8 @@ from PIL import Image, ImageFilter
 from io import BytesIO
 
 import numpy as np
-"""
-def open_image_path_as_byte_array(img_path: str) -> bytes:
-  
-  img = Image.open(img_path)
-  return open_image_as_byte_array(img)
-"""
 
+# Abrir o tipo Image como byte array
 def open_image_as_byte_array(img: Image) -> bytes:
   imgByteArr = BytesIO()
   img.save(imgByteArr, "PNG")
@@ -18,6 +13,7 @@ def open_image_as_byte_array(img: Image) -> bytes:
 
   return imgByteArr
 
+# Abrir imagem pelo endereco dela no sistema, como numpy array
 def open_image_as_numpy_array(img_path: str):
   
   original_image = Image.open(img_path)
@@ -25,6 +21,7 @@ def open_image_as_numpy_array(img_path: str):
 
   return original_image
 
+# Ler imagem a partir dos seus bytes
 def read_image_from_bytes(image_data) -> Image:
 
   image_bytes = BytesIO(image_data)
@@ -84,8 +81,6 @@ def split_img(original_img, n_parts: int, blur_radius: int) -> dict:
 
         slabs[counter] = Image.fromarray(temp_slab)
         counter += 1
-
-    print(f"Slabs = {slabs}")
 
     return slabs
 

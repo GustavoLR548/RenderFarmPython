@@ -8,8 +8,10 @@ import constants as consts
 from byte_utils import to_bytes
 import network_utils as NetworkUtils
 
+"""
+Thread do cliente
+"""
 class Client(Thread):
-
 
     def __init__(self,name, address = consts.LOCAL_CONNECTION) -> None:
         
@@ -17,54 +19,46 @@ class Client(Thread):
         self.running  = True
         self.username = name
         self.address = address
+
+        # Iniciar socket do cliente
         self.socket = socket(AF_INET, SOCK_STREAM)
 
-
+    # Funcao que sera chamada com o inicio da Thread
     def run(self) -> None: 
 
+        # Conectar ao servidor e mandar nome de usuario
         self.socket.connect(self.address)
         self.socket.sendall(to_bytes(self.username))
         print("Connected to server!")
 
         while self.running:
             
+            # Receber dados do servidor e separar bytes das instrucoes da imagem
             data = self.socket.recv(consts.MSG_BUFFER_SIZE)
-            #print(f"Data was received! {data}")
-
             instructions, data = NetworkUtils.separate_instructions_from_bytes(data)
-            #print(f"Image data retrieved! {data}")
 
             if consts.SENDING_IMAGE in instructions:
                 
-                #print("Getting instruction data")
+                # Pegar informacoes da imagem e capturar ela
                 num_of_bytes, image_id = NetworkUtils.get_instruction_data(instructions)
-                #print(f"Num of bytes = {num_of_bytes} \t image_id = {image_id}")
-
                 data = NetworkUtils.capture_image(self.socket,data,num_of_bytes)
 
-                #print("reading and applying blur to image")
+                # Ler a imagem dos bytes e aplicar a operacao
                 image = read_image_from_bytes(data)
                 image = apply_blur(image,5)
-                print("processing complete! now sending the images back to the server")
+               
+                # Transformar a imagem de volta para byte array
                 img_bytes  = open_image_as_byte_array(image)
                 image_size = len(img_bytes) 
 
+                # Fazer mensagem para voltar para o servidor
                 msg = f"{consts.SENDING_IMAGE}|{image_id}|{image_size}"
                 msg = NetworkUtils.to_image_instruction_msg(msg)
 
+
+                # Mandar a imagem de volta para o servidor
                 print("Sending images back!")
                 self.socket.sendall(msg + img_bytes)
-
-    def send_image(self, text: str) -> None:
-        
-        image = open_image_as_byte_array(text)
-        image_size = len(image)
-
-        msg = f"{consts.SENDING_IMAGE}|{image_size}"
-
-        self.socket.sendall(to_bytes(msg))
-        self.socket.sendall(image)
-
 
 def main() -> None:
 
@@ -78,19 +72,8 @@ def main() -> None:
     while running:
         text = input()
 
-        if text in consts.RESERVED_MESSAGES: 
-            client.socket.sendall(to_bytes(text))
-
-            if text == consts.QUIT_PROGRAM:
-                client.running = False
-                running = False 
-
-        else:
-            client.send_image(text)
-
     client.join()
 
 if __name__ == "__main__":
-
     main()
     
