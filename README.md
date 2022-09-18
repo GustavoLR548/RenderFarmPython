@@ -21,13 +21,13 @@ pip3 install -r requirements.txt
 Para executar o programa como cliente, execute:
 
 ```
-python3 client,py
+python3 client.py
 ```
 
 Para executar o programa como servidor, execute:
 
 ```
-python3 server,py
+python3 server.py
 ```
 Enquanto servidor, apenas mande o nome do arquivo da imagem, para que a mesma seja enviada 
 para os clientes.
